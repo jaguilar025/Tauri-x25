@@ -17,6 +17,13 @@ const toast = ref('');
 let toastTimer = null;
 const unlisteners = [];
 
+const DISPLAY_MODES = ['auto', 'B/s', 'KB/s', 'MB/s', 'GB/s'];
+const displayMode = ref('auto');
+function cycleMode() {
+  const i = DISPLAY_MODES.indexOf(displayMode.value);
+  displayMode.value = DISPLAY_MODES[(i + 1) % DISPLAY_MODES.length];
+}
+
 function showToast(msg) {
   toast.value = msg;
   if (toastTimer) clearTimeout(toastTimer);
@@ -81,6 +88,7 @@ onUnmounted(() => { unlisteners.forEach((u) => u && u()); });
       <h2 style="margin:0;">JackyNet</h2>
       <div class="spacer"></div>
       <button @click="manualRefresh">Refresh</button>
+      <button @click="cycleMode" :title="`Display: ${displayMode}`">Mode: {{ displayMode }}</button>
       <button @click="togglePip">PIP</button>
       <button @click="showSettings = !showSettings">Settings</button>
     </header>
@@ -89,8 +97,9 @@ onUnmounted(() => { unlisteners.forEach((u) => u && u()); });
       <div v-if="toast" class="toast">{{ toast }}</div>
     </transition>
 
-    <div v-if="error" class="panel" style="border-color: var(--danger); color: var(--danger);">
-      {{ error }}
+    <div v-if="error" class="panel error-banner">
+      <span style="flex: 1;">{{ error }}</span>
+      <button class="error-close" @click="error = ''" title="Dismiss">✕</button>
     </div>
 
     <SettingsPanel
@@ -109,6 +118,7 @@ onUnmounted(() => { unlisteners.forEach((u) => u && u()); });
       v-if="tab==='live'"
       :processes="processes"
       :aliases="config.process_aliases"
+      :display-mode="displayMode"
       @kill="killProc"
       @rename="(key, name) => setAlias('process', key, name)"
     />
@@ -120,9 +130,9 @@ onUnmounted(() => { unlisteners.forEach((u) => u && u()); });
       @rename="(key, name) => setAlias('interface', key, name)"
     />
 
-    <SessionFooter v-if="tab==='live'" />
+    <SessionFooter v-if="tab==='live'" :aliases="config.interface_aliases" />
 
-    <div class="app-credits">by jaacker25 2026 v1.0</div>
+    <div class="app-credits">by jaacker25 2026 v1.1</div>
   </div>
 </template>
 
@@ -152,6 +162,25 @@ onUnmounted(() => { unlisteners.forEach((u) => u && u()); });
   height: 28px;
   object-fit: contain;
   border-radius: 6px;
+}
+.error-banner {
+  border-color: var(--danger);
+  color: var(--danger);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.error-close {
+  background: transparent;
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  padding: 2px 8px;
+  font-size: 12px;
+  line-height: 1;
+}
+.error-close:hover {
+  background: var(--danger);
+  color: #fff;
 }
 .toast {
   position: fixed;

@@ -1,5 +1,4 @@
 use anyhow::Result;
-use chrono::{DateTime, Local};
 use serde::Serialize;
 use std::process::Stdio;
 use std::sync::Arc;
@@ -19,21 +18,10 @@ pub struct ProcessRow {
     pub cmdline: String,
 }
 
-#[derive(Debug, Clone, Serialize)]
-pub struct SessionStats {
-    pub started_at: String,
-    pub started_unix_ms: i64,
-    pub total_rx_bytes: u64,
-    pub total_tx_bytes: u64,
-}
-
 #[derive(Default)]
 pub struct NethogsState {
     pub latest: Mutex<Vec<ProcessRow>>,
     pub running: Mutex<bool>,
-    pub session_start: Mutex<Option<DateTime<Local>>>,
-    pub total_rx_bytes: Mutex<u64>,
-    pub total_tx_bytes: Mutex<u64>,
 }
 
 impl NethogsState {
@@ -42,20 +30,6 @@ impl NethogsState {
     pub async fn snapshot(&self) -> Vec<ProcessRow> {
         self.latest.lock().await.clone()
     }
-
-    pub async fn session_stats(&self) -> SessionStats {
-        let start = self.session_start.lock().await.clone();
-        let (started_at, started_unix_ms) = match start {
-            Some(t) => (t.to_rfc3339(), t.timestamp_millis()),
-            None => (String::new(), 0),
-        };
-        SessionStats {
-            started_at,
-            started_unix_ms,
-            total_rx_bytes: *self.total_rx_bytes.lock().await,
-            total_tx_bytes: *self.total_tx_bytes.lock().await,
-        }
-    }
 }
 
 pub async fn start_stream(app: AppHandle, state: Arc<NethogsState>) -> Result<()> {
@@ -63,10 +37,6 @@ pub async fn start_stream(app: AppHandle, state: Arc<NethogsState>) -> Result<()
         let mut running = state.running.lock().await;
         if *running { return Ok(()); }
         *running = true;
-    }
-    {
-        let mut s = state.session_start.lock().await;
-        if s.is_none() { *s = Some(Local::now()); }
     }
 
     tokio::spawn(async move {
@@ -105,24 +75,11 @@ pub async fn start_stream(app: AppHandle, state: Arc<NethogsState>) -> Result<()
                 if last_flush.elapsed() >= std::time::Duration::from_millis(900) {
                     frame.sort_by(|a, b| (b.rx_kbs + b.tx_kbs).partial_cmp(&(a.rx_kbs + a.tx_kbs)).unwrap_or(std::cmp::Ordering::Equal));
 
-                    let sum_rx: f64 = frame.iter().map(|r| r.rx_kbs).sum();
-                    let sum_tx: f64 = frame.iter().map(|r| r.tx_kbs).sum();
-                    {
-                        let mut rx = state.total_rx_bytes.lock().await;
-                        *rx = rx.saturating_add((sum_rx * 1024.0) as u64);
-                    }
-                    {
-                        let mut tx = state.total_tx_bytes.lock().await;
-                        *tx = tx.saturating_add((sum_tx * 1024.0) as u64);
-                    }
-
                     {
                         let mut guard = state.latest.lock().await;
                         *guard = frame.clone();
                     }
                     let _ = app.emit("nethogs:update", frame.clone());
-                    let stats = state.session_stats().await;
-                    let _ = app.emit("nethogs:session", stats);
                     last_flush = std::time::Instant::now();
                     frame.clear();
                 }

@@ -65,6 +65,18 @@ th { color: var(--muted); font-weight: 500; font-size: 12px; text-transform: upp
 body.pip {
   background: rgba(20,21,25,0.92);
   backdrop-filter: blur(8px);
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+body.pip::-webkit-scrollbar,
+body.pip *::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+body.pip,
+body.pip * {
+  scrollbar-width: none;
 }
 .pip-window {
   padding: 8px;

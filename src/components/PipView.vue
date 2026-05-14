@@ -7,12 +7,12 @@ import SessionFooter from './SessionFooter.vue';
 
 const processes = ref([]);
 const aliases = ref({});
+const ifaceAliases = ref({});
 let unlisten = null;
 
 function fmt(kb) {
   if (kb == null) return '–';
-  if (kb < 1024) return `${kb.toFixed(1)} KB/s`;
-  return `${(kb/1024).toFixed(2)} MB/s`;
+  return kb.toFixed(1);
 }
 function shortPath(path) {
   if (!path) return '?';
@@ -34,6 +34,7 @@ async function startResize(direction, e) {
 onMounted(async () => {
   const cfg = await invoke('get_config');
   aliases.value = cfg.process_aliases || {};
+  ifaceAliases.value = cfg.interface_aliases || {};
   processes.value = await invoke('nethogs_snapshot').catch(() => []);
   unlisten = await listen('nethogs:update', (e) => { processes.value = e.payload; });
 });
@@ -58,7 +59,8 @@ onUnmounted(() => { if (unlisten) unlisten(); });
         </tr>
       </tbody>
     </table>
-    <SessionFooter compact />
+    <div v-if="processes.length" class="unit-legend muted">values in KB/s</div>
+    <SessionFooter compact :aliases="ifaceAliases" />
 
     <!-- Resize handles -->
     <div class="rz rz-n"  @mousedown="startResize('North', $event)"></div>
@@ -97,6 +99,12 @@ onUnmounted(() => { if (unlisten) unlisten(); });
   white-space: nowrap;
 }
 .small { font-size: 11px; }
+.unit-legend {
+  font-size: 10px;
+  text-align: right;
+  padding: 2px 4px 4px;
+  font-style: italic;
+}
 
 /* Resize handles: invisible bands on edges + corners */
 .rz { position: fixed; z-index: 9999; }

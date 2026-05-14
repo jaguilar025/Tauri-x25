@@ -1,5 +1,7 @@
 <script setup>
-import { ref } from 'vue';
+import { onMounted, onUnmounted, ref } from 'vue';
+import { invoke } from '@tauri-apps/api/core';
+import { listen } from '@tauri-apps/api/event';
 
 const props = defineProps({
   interfaces: Array,
@@ -10,6 +12,26 @@ const emit = defineEmits(['rename']);
 const expanded = ref(new Set());
 const editing = ref(null);
 const draft = ref('');
+const liveStatus = ref({}); // name → is_up
+let unlistenStatus = null;
+
+onMounted(async () => {
+  try {
+    const stats = await invoke('get_session_stats');
+    const map = {};
+    for (const s of stats) map[s.name] = s.is_up;
+    liveStatus.value = map;
+  } catch (_) {}
+  unlistenStatus = await listen('session:update', (e) => {
+    const map = {};
+    for (const s of (e.payload || [])) map[s.name] = s.is_up;
+    liveStatus.value = map;
+  });
+});
+
+onUnmounted(() => { if (unlistenStatus) unlistenStatus(); });
+
+function isOnline(name) { return !!liveStatus.value[name]; }
 
 function toggle(name) {
   if (expanded.value.has(name)) expanded.value.delete(name);
@@ -44,6 +66,11 @@ function fmtBytes(b) {
     <div v-for="iface in interfaces" :key="iface.name" class="panel iface-card">
       <div class="row iface-header" @click="toggle(iface.name)">
         <span class="muted" style="width:18px;">{{ expanded.has(iface.name) ? '▾' : '▸' }}</span>
+        <span
+          class="status-dot"
+          :class="{ online: isOnline(iface.name), offline: !isOnline(iface.name) }"
+          :title="isOnline(iface.name) ? 'Active' : 'Inactive'"
+        ></span>
         <strong>{{ display(iface.name) }}</strong>
         <div class="spacer"></div>
         <span class="muted mono">total ↓ {{ fmtBytes(iface.total_rx) }} ↑ {{ fmtBytes(iface.total_tx) }}</span>
@@ -134,4 +161,19 @@ function fmtBytes(b) {
   font-size: 13px;
 }
 .selectable { user-select: text; word-break: break-all; }
+.status-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.status-dot.online {
+  background: var(--ok);
+  box-shadow: 0 0 6px rgba(81, 207, 102, 0.6);
+}
+.status-dot.offline {
+  background: var(--danger);
+  opacity: 0.55;
+}
 </style>

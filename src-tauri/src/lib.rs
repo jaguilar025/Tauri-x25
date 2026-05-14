@@ -1,5 +1,6 @@
 mod commands;
 mod config;
+mod iface_stats;
 mod nethogs;
 mod vnstat;
 
@@ -11,12 +12,14 @@ use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut,
 
 use crate::commands::*;
 use crate::config::ConfigStore;
+use crate::iface_stats::SessionState;
 use crate::nethogs::NethogsState;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let cfg = Arc::new(ConfigStore::load());
     let nethogs_state = NethogsState::new();
+    let session_state = SessionState::new();
 
     let initial_hotkey = cfg.get().hotkey.clone();
     let initial_pip = cfg.get().pip_enabled;
@@ -29,6 +32,7 @@ pub fn run() {
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .manage(cfg.clone())
         .manage(nethogs_state.clone())
+        .manage(session_state.clone())
         .on_window_event(|window, event| {
             if window.label() == "main" {
                 if let WindowEvent::CloseRequested { api, .. } = event {
@@ -91,6 +95,22 @@ pub fn run() {
                 let _ = apply_pip(&handle, true);
             }
 
+            // Periodic interface-counter sampler (every 1s). Reads kernel
+            // byte counters from /sys/class/net/*/statistics and emits a
+            // per-interface session update to the frontend.
+            let session_for_task = session_state.clone();
+            let app_for_task = handle.clone();
+            tauri::async_runtime::spawn(async move {
+                // Prime the initial snapshot so per-iface "started_at" is
+                // anchored to app launch, not first event read.
+                let _ = session_for_task.tick().await;
+                loop {
+                    tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+                    let stats = session_for_task.tick().await;
+                    let _ = app_for_task.emit("session:update", stats);
+                }
+            });
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -103,6 +123,7 @@ pub fn run() {
             kill_process,
             toggle_pip,
             get_session_stats,
+            reset_iface_session,
         ])
         .run(tauri::generate_context!())
         .expect("error while running JackyNet");

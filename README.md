@@ -40,10 +40,10 @@ Para **compilar** desde código (no necesario si instalas el `.deb`):
 
 ### Opción A — paquete .deb (recomendado)
 
-Descarga el `.deb` más reciente desde [Releases](https://github.com/jaguilar025/JackyNet/releases/tag/v0.1.0) e instálalo:
+Descarga el `.deb` más reciente desde [Releases](https://github.com/jaguilar025/JackyNet/releases/tag/v1.1.0) e instálalo:
 
 ```bash
-sudo apt install ./JackyNet_0.1.0_amd64.deb
+sudo apt install ./JackyNet_1.1.0_amd64.deb
 ```
 
 apt resolverá automáticamente las dependencias (`nethogs`, `vnstat`, `policykit-1`, `libayatana-appindicator3-1`).
@@ -60,11 +60,11 @@ sudo apt install ./src-tauri/target/release/bundle/deb/JackyNet_*.deb
 
 ### Opción C — AppImage portable
 
-Descarga el `.AppImage` desde [Releases](https://github.com/jaguilar025/JackyNet/releases/tag/v0.1.0), dale permisos de ejecución y úsalo donde quieras:
+Descarga el `.AppImage` desde [Releases](https://github.com/jaguilar025/JackyNet/releases/tag/v1.1.0), dale permisos de ejecución y úsalo donde quieras:
 
 ```bash
-chmod +x JackyNet_0.1.0_amd64.AppImage
-./JackyNet_0.1.0_amd64.AppImage
+chmod +x JackyNet_1.1.0_amd64.AppImage
+./JackyNet_1.1.0_amd64.AppImage
 ```
 
 Con esta opción debes instalar las dependencias del sistema a mano:
@@ -150,4 +150,4 @@ rm -rf ~/.config/jackynet
 
 ## Créditos
 
-by jaacker25 — 2026 — v1.0
+by jaacker25 — 2026 — v1.1

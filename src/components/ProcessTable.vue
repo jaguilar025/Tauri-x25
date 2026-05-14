@@ -4,6 +4,7 @@ import { ref } from 'vue';
 const props = defineProps({
   processes: Array,
   aliases: Object,
+  displayMode: { type: String, default: 'auto' },
 });
 const emit = defineEmits(['kill', 'rename']);
 
@@ -40,9 +41,18 @@ function shortPath(path) {
 }
 function fmt(kb) {
   if (kb == null) return '–';
-  if (kb < 1) return `${(kb*1024).toFixed(0)} B/s`;
-  if (kb < 1024) return `${kb.toFixed(1)} KB/s`;
-  return `${(kb/1024).toFixed(2)} MB/s`;
+  const bps = kb * 1024;
+  switch (props.displayMode) {
+    case 'B/s':  return `${bps.toFixed(0)} B/s`;
+    case 'KB/s': return `${kb.toFixed(2)} KB/s`;
+    case 'MB/s': return `${(kb / 1024).toFixed(3)} MB/s`;
+    case 'GB/s': return `${(kb / 1024 / 1024).toFixed(4)} GB/s`;
+    default:
+      if (kb < 1) return `${bps.toFixed(0)} B/s`;
+      if (kb < 1024) return `${kb.toFixed(1)} KB/s`;
+      if (kb < 1024 * 1024) return `${(kb / 1024).toFixed(2)} MB/s`;
+      return `${(kb / 1024 / 1024).toFixed(3)} GB/s`;
+  }
 }
 </script>
 

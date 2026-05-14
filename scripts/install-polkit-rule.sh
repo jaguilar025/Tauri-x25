@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 #
-# Installs a polkit rule so that JackyNet can run `pkexec nethogs` without
-# prompting for a password each time. Run once after installing JackyNet.
+# Installs a polkit rule so that JackyNet can run `pkexec nethogs` and
+# `pkexec kill` without prompting for a password each time. Run once after
+# installing JackyNet.
 #
 #   sudo ./install-polkit-rule.sh           # uses $SUDO_USER and `which nethogs`
 #   sudo ./install-polkit-rule.sh <user>    # explicit user
@@ -37,18 +38,25 @@ if [[ -z "$NETHOGS_BIN" ]]; then
   exit 1
 fi
 
+KILL_BIN="$(command -v kill || true)"
+if [[ -z "$KILL_BIN" ]]; then
+  KILL_BIN="/usr/bin/kill"
+fi
+
 echo "Installing polkit rule:"
 echo "  user:    $TARGET_USER"
 echo "  nethogs: $NETHOGS_BIN"
+echo "  kill:    $KILL_BIN"
 echo "  rule:    $RULE_PATH"
 
 cat > "$RULE_PATH" <<EOF
-// JackyNet — allow $TARGET_USER to run nethogs via pkexec without password.
-// Installed by install-polkit-rule.sh. Remove to revert.
+// JackyNet — allow $TARGET_USER to run nethogs and kill via pkexec without
+// password. Installed by install-polkit-rule.sh. Remove to revert.
 polkit.addRule(function(action, subject) {
-    if (action.id == "org.freedesktop.policykit.exec" &&
-        action.lookup("program") == "$NETHOGS_BIN" &&
-        subject.user == "$TARGET_USER") {
+    if (action.id != "org.freedesktop.policykit.exec") return;
+    if (subject.user != "$TARGET_USER") return;
+    var program = action.lookup("program");
+    if (program == "$NETHOGS_BIN" || program == "$KILL_BIN") {
         return polkit.Result.YES;
     }
 });
@@ -57,10 +65,8 @@ EOF
 chmod 644 "$RULE_PATH"
 chown root:root "$RULE_PATH"
 
-# polkitd picks up rule changes automatically, but a reload doesn't hurt
-# on systems where the daemon caches aggressively.
 if systemctl is-active --quiet polkit; then
   systemctl reload polkit 2>/dev/null || systemctl restart polkit || true
 fi
 
-echo "Done. Open JackyNet — nethogs should now run as root without a prompt."
+echo "Done. Open JackyNet — nethogs and kill should now run without prompts."

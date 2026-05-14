@@ -1,6 +1,6 @@
 [package]
 name = "jackynet"
-version = "0.1.0"
+version = "1.1.0"
 description = "Lightweight Linux network monitor"
 authors = ["Jorge"]
 edition = "2021"
