@@ -17,6 +17,33 @@ pub struct AppConfig {
     pub autostart: bool,
     #[serde(default)]
     pub pip_enabled: bool,
+    #[serde(default)]
+    pub alerts: Vec<Alert>,
+    #[serde(default)]
+    pub alert_iface: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Alert {
+    pub id: String,
+    pub name: String,
+    pub color: String,
+    pub notify_duration: String, // "10s" | "1min" | "5min" | "continue"
+    #[serde(flatten)]
+    pub kind: AlertKind,
+    #[serde(default)]
+    pub paused: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "lowercase")]
+pub enum AlertKind {
+    Chronometer { hms: String },             // "HH:MM:SS"
+    Date { iso: String },                    // ISO 8601 datetime
+    Consumption {
+        bytes: u64,
+        direction: String,                   // "download" | "upload" | "combined"
+    },
 }
 
 fn default_hotkey() -> String { "CmdOrCtrl+Shift+N".to_string() }
@@ -29,6 +56,8 @@ impl Default for AppConfig {
             hotkey: default_hotkey(),
             autostart: false,
             pip_enabled: false,
+            alerts: Vec::new(),
+            alert_iface: None,
         }
     }
 }
@@ -78,6 +107,64 @@ impl ConfigStore {
         {
             let mut guard = self.data.lock().unwrap();
             guard.pip_enabled = enabled;
+        }
+        self.persist()
+    }
+
+    pub fn add_alert(&self, alert: Alert) -> Result<()> {
+        {
+            let mut guard = self.data.lock().unwrap();
+            if guard.alerts.len() >= 10 {
+                return Err(anyhow::anyhow!("maximum of 10 alerts reached"));
+            }
+            if guard.alerts.iter().any(|a| a.id == alert.id) {
+                return Err(anyhow::anyhow!("alert id already exists"));
+            }
+            guard.alerts.push(alert);
+        }
+        self.persist()
+    }
+
+    pub fn remove_alert(&self, id: &str) -> Result<()> {
+        {
+            let mut guard = self.data.lock().unwrap();
+            guard.alerts.retain(|a| a.id != id);
+        }
+        self.persist()
+    }
+
+    pub fn toggle_alert_pause(&self, id: &str) -> Result<bool> {
+        let mut new_state = false;
+        {
+            let mut guard = self.data.lock().unwrap();
+            if let Some(a) = guard.alerts.iter_mut().find(|a| a.id == id) {
+                a.paused = !a.paused;
+                new_state = a.paused;
+            }
+        }
+        self.persist()?;
+        Ok(new_state)
+    }
+
+    pub fn set_alert_paused(&self, id: &str, paused: bool) -> Result<bool> {
+        let mut changed = false;
+        {
+            let mut guard = self.data.lock().unwrap();
+            if let Some(a) = guard.alerts.iter_mut().find(|a| a.id == id) {
+                if a.paused != paused {
+                    a.paused = paused;
+                    changed = true;
+                }
+            }
+        }
+        if changed { self.persist()?; }
+        Ok(changed)
+    }
+
+    pub fn set_alert_iface(&self, iface: Option<String>) -> Result<()> {
+        {
+            let mut guard = self.data.lock().unwrap();
+            guard.alert_iface = iface;
         }
         self.persist()
     }

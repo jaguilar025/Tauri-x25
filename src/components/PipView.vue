@@ -4,6 +4,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import SessionFooter from './SessionFooter.vue';
+import AlertIndicators from './AlertIndicators.vue';
 
 const processes = ref([]);
 const aliases = ref({});
@@ -46,6 +47,7 @@ onUnmounted(() => { if (unlisten) unlisten(); });
     <div class="row pip-header" data-tauri-drag-region>
       <img src="/icon.png" alt="" class="pip-logo" data-tauri-drag-region />
       <strong style="font-size: 12px;" data-tauri-drag-region>JackyNet</strong>
+      <AlertIndicators />
       <div class="spacer" data-tauri-drag-region></div>
       <button @click="close" title="Exit PiP">✕</button>
     </div>

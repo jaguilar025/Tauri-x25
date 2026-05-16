@@ -1,3 +1,4 @@
+mod alerts;
 mod commands;
 mod config;
 mod iface_stats;
@@ -10,6 +11,7 @@ use tauri::tray::TrayIconBuilder;
 use tauri::{Emitter, Manager, WindowEvent};
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 
+use crate::alerts::AlertsState;
 use crate::commands::*;
 use crate::config::ConfigStore;
 use crate::iface_stats::SessionState;
@@ -20,6 +22,7 @@ pub fn run() {
     let cfg = Arc::new(ConfigStore::load());
     let nethogs_state = NethogsState::new();
     let session_state = SessionState::new();
+    let alerts_state = AlertsState::new();
 
     let initial_hotkey = cfg.get().hotkey.clone();
     let initial_pip = cfg.get().pip_enabled;
@@ -33,6 +36,7 @@ pub fn run() {
         .manage(cfg.clone())
         .manage(nethogs_state.clone())
         .manage(session_state.clone())
+        .manage(alerts_state.clone())
         .on_window_event(|window, event| {
             if window.label() == "main" {
                 if let WindowEvent::CloseRequested { api, .. } = event {
@@ -78,16 +82,24 @@ pub fn run() {
             if let Some(i) = icon { tray_builder = tray_builder.icon(i); }
             tray_builder.build(app)?;
 
-            // Global hotkey: toggle main visibility
+            // Global hotkey: toggle main visibility. Unregister anything
+            // first to avoid "HotKey already registered" errors when the
+            // previous instance is still alive in the tray (common during
+            // `tauri dev` hot reloads — kill the tray icon before re-running
+            // to fully release the OS-level grab).
+            let _ = app.global_shortcut().unregister_all();
             if let Some(shortcut) = parse_shortcut(&initial_hotkey) {
                 let h = handle.clone();
-                let result = app.global_shortcut().on_shortcut(shortcut, move |_app, _sc, event| {
+                if let Err(e) = app.global_shortcut().on_shortcut(shortcut, move |_app, _sc, event| {
                     if event.state() == ShortcutState::Pressed {
                         toggle_main_visibility(&h);
                     }
-                });
-                if let Err(e) = result {
-                    eprintln!("hotkey registration failed: {e}");
+                }) {
+                    eprintln!(
+                        "hotkey registration failed ({e}). Another JackyNet \
+                         instance may still be running — quit it from the tray \
+                         and restart."
+                    );
                 }
             }
 
@@ -99,6 +111,8 @@ pub fn run() {
             // byte counters from /sys/class/net/*/statistics and emits a
             // per-interface session update to the frontend.
             let session_for_task = session_state.clone();
+            let alerts_for_task = alerts_state.clone();
+            let cfg_for_task = cfg.clone();
             let app_for_task = handle.clone();
             tauri::async_runtime::spawn(async move {
                 // Prime the initial snapshot so per-iface "started_at" is
@@ -107,7 +121,23 @@ pub fn run() {
                 loop {
                     tokio::time::sleep(std::time::Duration::from_secs(1)).await;
                     let stats = session_for_task.tick().await;
-                    let _ = app_for_task.emit("session:update", stats);
+                    let _ = app_for_task.emit("session:update", stats.clone());
+
+                    let snapshot = cfg_for_task.get();
+                    let (active, completed) = alerts_for_task.evaluate(&snapshot, &stats).await;
+                    let _ = app_for_task.emit("alerts:active", active);
+
+                    let mut any_paused = false;
+                    for id in &completed {
+                        if cfg_for_task.set_alert_paused(id, true).unwrap_or(false) {
+                            any_paused = true;
+                        }
+                    }
+                    if any_paused {
+                        // Let the frontend redraw the alerts list with
+                        // the new paused state.
+                        let _ = app_for_task.emit("config:update", cfg_for_task.get());
+                    }
                 }
             });
 
@@ -124,6 +154,11 @@ pub fn run() {
             toggle_pip,
             get_session_stats,
             reset_iface_session,
+            add_alert,
+            remove_alert,
+            toggle_alert_pause,
+            dismiss_alert,
+            set_alert_iface,
         ])
         .run(tauri::generate_context!())
         .expect("error while running JackyNet");

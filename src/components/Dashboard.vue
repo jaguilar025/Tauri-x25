@@ -6,12 +6,14 @@ import ProcessTable from './ProcessTable.vue';
 import HistoricalView from './HistoricalView.vue';
 import SettingsPanel from './SettingsPanel.vue';
 import SessionFooter from './SessionFooter.vue';
+import AlertsTab from './AlertsTab.vue';
+import AlertIndicators from './AlertIndicators.vue';
 
 const tab = ref('live');
 const processes = ref([]);
-const interfaces = ref([]);
-const config = ref({ interface_aliases: {}, process_aliases: {}, hotkey: 'CmdOrCtrl+Shift+N', autostart: false, pip_enabled: false });
-const showSettings = ref(false);
+const interfaces = ref([]);          // vnstat (historical)
+const liveInterfaces = ref([]);      // /sys session updates
+const config = ref({ interface_aliases: {}, process_aliases: {}, hotkey: 'CmdOrCtrl+Shift+N', autostart: false, pip_enabled: false, alerts: [], alert_iface: null });
 const error = ref('');
 const toast = ref('');
 let toastTimer = null;
@@ -75,6 +77,9 @@ onMounted(async () => {
   await manualRefresh();
   unlisteners.push(await listen('nethogs:update', (e) => { processes.value = e.payload; }));
   unlisteners.push(await listen('tray:refresh', () => { manualRefresh(); }));
+  unlisteners.push(await listen('session:update', (e) => { liveInterfaces.value = e.payload || []; }));
+  unlisteners.push(await listen('config:update', (e) => { config.value = e.payload; }));
+  try { liveInterfaces.value = await invoke('get_session_stats'); } catch (_) {}
   await invoke('start_nethogs_stream').catch((e) => { error.value = String(e); });
 });
 
@@ -86,11 +91,11 @@ onUnmounted(() => { unlisteners.forEach((u) => u && u()); });
     <header class="row app-header">
       <img src="/icon.png" alt="" class="app-logo" />
       <h2 style="margin:0;">JackyNet</h2>
+      <AlertIndicators />
       <div class="spacer"></div>
       <button @click="manualRefresh">Refresh</button>
       <button @click="cycleMode" :title="`Display: ${displayMode}`">Mode: {{ displayMode }}</button>
       <button @click="togglePip">PIP</button>
-      <button @click="showSettings = !showSettings">Settings</button>
     </header>
 
     <transition name="fade">
@@ -102,16 +107,11 @@ onUnmounted(() => { unlisteners.forEach((u) => u && u()); });
       <button class="error-close" @click="error = ''" title="Dismiss">✕</button>
     </div>
 
-    <SettingsPanel
-      v-if="showSettings"
-      :config="config"
-      @save="saveSettings"
-      @close="showSettings = false"
-    />
-
-    <div class="row" style="margin-bottom: 10px;">
+    <div class="row tab-bar">
       <button :class="{ primary: tab==='live' }" @click="tab='live'">Live Processes</button>
       <button :class="{ primary: tab==='history' }" @click="tab='history'">Historical Usage</button>
+      <button :class="{ primary: tab==='alerts' }" @click="tab='alerts'">Alerts</button>
+      <button :class="{ primary: tab==='settings' }" @click="tab='settings'">Settings</button>
     </div>
 
     <ProcessTable
@@ -124,10 +124,24 @@ onUnmounted(() => { unlisteners.forEach((u) => u && u()); });
     />
 
     <HistoricalView
-      v-else
+      v-else-if="tab==='history'"
       :interfaces="interfaces"
       :aliases="config.interface_aliases"
       @rename="(key, name) => setAlias('interface', key, name)"
+    />
+
+    <AlertsTab
+      v-else-if="tab==='alerts'"
+      :config="config"
+      :active-interfaces="liveInterfaces"
+      @changed="loadConfig"
+    />
+
+    <SettingsPanel
+      v-else-if="tab==='settings'"
+      :config="config"
+      @save="saveSettings"
+      @close="tab='live'"
     />
 
     <SessionFooter v-if="tab==='live'" :aliases="config.interface_aliases" />
@@ -162,6 +176,10 @@ onUnmounted(() => { unlisteners.forEach((u) => u && u()); });
   height: 28px;
   object-fit: contain;
   border-radius: 6px;
+}
+.tab-bar {
+  gap: 8px;
+  margin-bottom: 10px;
 }
 .error-banner {
   border-color: var(--danger);

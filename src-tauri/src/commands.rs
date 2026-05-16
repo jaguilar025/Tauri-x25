@@ -4,7 +4,8 @@ use tauri::{AppHandle, Manager, State, WebviewUrl, WebviewWindowBuilder};
 use tauri::Emitter;
 use tauri_plugin_autostart::ManagerExt;
 
-use crate::config::{AppConfig, ConfigStore};
+use crate::alerts::AlertsState;
+use crate::config::{Alert, AppConfig, ConfigStore};
 use crate::iface_stats::{IfaceSession, SessionState};
 use crate::nethogs::{self, NethogsState, ProcessRow};
 use crate::vnstat::{self, InterfaceUsage};
@@ -48,6 +49,51 @@ pub async fn reset_iface_session(
     let stats = state.current().await;
     let _ = app.emit("session:update", stats.clone());
     Ok(stats)
+}
+
+#[tauri::command]
+pub fn add_alert(alert: Alert, store: State<'_, Arc<ConfigStore>>) -> Result<(), String> {
+    store.add_alert(alert).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn remove_alert(
+    id: String,
+    store: State<'_, Arc<ConfigStore>>,
+    alerts: State<'_, Arc<AlertsState>>,
+) -> Result<(), String> {
+    store.remove_alert(&id).map_err(|e| e.to_string())?;
+    alerts.reset(&id).await;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn toggle_alert_pause(
+    id: String,
+    store: State<'_, Arc<ConfigStore>>,
+    alerts: State<'_, Arc<AlertsState>>,
+) -> Result<bool, String> {
+    let new_state = store.toggle_alert_pause(&id).map_err(|e| e.to_string())?;
+    alerts.reset(&id).await;
+    Ok(new_state)
+}
+
+#[tauri::command]
+pub async fn dismiss_alert(
+    id: String,
+    alerts: State<'_, Arc<AlertsState>>,
+) -> Result<(), String> {
+    alerts.dismiss(&id).await;
+    // The next periodic tick (~1s) will mark this alert as completed,
+    // auto-pause it, and emit the updated alerts:active. The frontend
+    // optimistically removes the indicator on click so the UI feels
+    // immediate.
+    Ok(())
+}
+
+#[tauri::command]
+pub fn set_alert_iface(name: Option<String>, store: State<'_, Arc<ConfigStore>>) -> Result<(), String> {
+    store.set_alert_iface(name).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
