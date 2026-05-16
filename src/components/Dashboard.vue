@@ -146,7 +146,7 @@ onUnmounted(() => { unlisteners.forEach((u) => u && u()); });
 
     <SessionFooter v-if="tab==='live'" :aliases="config.interface_aliases" />
 
-    <div class="app-credits">by jaacker25 2026 v1.1</div>
+    <div class="app-credits">by jaacker25 2026 v1.2</div>
   </div>
 </template>
 
