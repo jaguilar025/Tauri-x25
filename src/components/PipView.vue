@@ -46,7 +46,7 @@ onUnmounted(() => { if (unlisten) unlisten(); });
   <div class="pip-window" data-tauri-drag-region>
     <div class="row pip-header" data-tauri-drag-region>
       <img src="/icon.png" alt="" class="pip-logo" data-tauri-drag-region />
-      <strong style="font-size: 12px;" data-tauri-drag-region>JackyNet</strong>
+      <strong style="font-size: 12px;" data-tauri-drag-region>Tauri x25</strong>
       <AlertIndicators />
       <div class="spacer" data-tauri-drag-region></div>
       <button @click="close" title="Exit PiP">✕</button>

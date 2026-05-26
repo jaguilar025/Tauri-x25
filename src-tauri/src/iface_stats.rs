@@ -18,7 +18,7 @@ pub struct IfaceSnapshot {
 }
 
 /// Per-interface session record. Tracks bytes since the interface was first
-/// seen in this JackyNet session, plus its current live status.
+/// seen in this Tauri x25 session, plus its current live status.
 #[derive(Debug, Clone, Serialize)]
 pub struct IfaceSession {
     pub name: String,

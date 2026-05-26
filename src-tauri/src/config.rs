@@ -181,10 +181,33 @@ impl ConfigStore {
 }
 
 fn config_path() -> PathBuf {
-    let mut p = dirs::config_dir().unwrap_or_else(|| PathBuf::from("."));
-    p.push("jackynet");
-    p.push("config.json");
-    p
+    let base = dirs::config_dir().unwrap_or_else(|| PathBuf::from("."));
+    let new_dir = base.join("tauri-x25");
+    let new_path = new_dir.join("config.json");
+
+    // One-time migration from previous config directory names.
+    // Tries the most recent legacy name first, then the older one.
+    if !new_path.exists() {
+        for legacy_name in ["taurix25", "jackynet"] {
+            let legacy_dir = base.join(legacy_name);
+            if !legacy_dir.exists() {
+                continue;
+            }
+            if new_dir.exists() {
+                let legacy_cfg = legacy_dir.join("config.json");
+                if legacy_cfg.exists() {
+                    let _ = fs::rename(&legacy_cfg, &new_path);
+                }
+            } else {
+                let _ = fs::rename(&legacy_dir, &new_dir);
+            }
+            if new_path.exists() {
+                break;
+            }
+        }
+    }
+
+    new_path
 }
 
 fn read_or_default(path: &PathBuf) -> AppConfig {

@@ -52,13 +52,13 @@ pub fn run() {
             let show_i = MenuItem::with_id(app, "show", "Show / Hide Window", true, None::<&str>)?;
             let pip_i = MenuItem::with_id(app, "pip", "Toggle PiP Overlay", true, None::<&str>)?;
             let refresh_i = MenuItem::with_id(app, "refresh", "Refresh", true, None::<&str>)?;
-            let quit_i = MenuItem::with_id(app, "quit", "Quit JackyNet", true, None::<&str>)?;
+            let quit_i = MenuItem::with_id(app, "quit", "Quit Tauri x25", true, None::<&str>)?;
             let menu = Menu::with_items(app, &[&show_i, &pip_i, &refresh_i, &quit_i])?;
 
             let icon = app.default_window_icon().cloned();
             let mut tray_builder = TrayIconBuilder::with_id("main-tray")
                 .menu(&menu)
-                .tooltip("JackyNet")
+                .tooltip("Tauri x25")
                 .show_menu_on_left_click(false)
                 .on_menu_event(|app, event| {
                     match event.id().as_ref() {
@@ -96,7 +96,7 @@ pub fn run() {
                     }
                 }) {
                     eprintln!(
-                        "hotkey registration failed ({e}). Another JackyNet \
+                        "hotkey registration failed ({e}). Another Tauri x25 \
                          instance may still be running — quit it from the tray \
                          and restart."
                     );
@@ -161,7 +161,7 @@ pub fn run() {
             set_alert_iface,
         ])
         .run(tauri::generate_context!())
-        .expect("error while running JackyNet");
+        .expect("error while running Tauri x25");
 }
 
 fn parse_shortcut(input: &str) -> Option<Shortcut> {

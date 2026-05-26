@@ -90,7 +90,7 @@ onUnmounted(() => { unlisteners.forEach((u) => u && u()); });
   <div class="dashboard">
     <header class="row app-header">
       <img src="/icon.png" alt="" class="app-logo" />
-      <h2 style="margin:0;">JackyNet</h2>
+      <h2 style="margin:0;">Tauri x25</h2>
       <AlertIndicators />
       <div class="spacer"></div>
       <button @click="manualRefresh">Refresh</button>
@@ -146,7 +146,7 @@ onUnmounted(() => { unlisteners.forEach((u) => u && u()); });
 
     <SessionFooter v-if="tab==='live'" :aliases="config.interface_aliases" />
 
-    <div class="app-credits">by jaacker25 2026 v1.2</div>
+    <div class="app-credits">by jaguilar025 2026 v1.3</div>
   </div>
 </template>
 

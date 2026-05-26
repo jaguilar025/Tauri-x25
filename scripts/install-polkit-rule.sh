@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
 #
-# Installs a polkit rule so that JackyNet can run `pkexec nethogs` and
+# Installs a polkit rule so that Tauri x25 can run `pkexec nethogs` and
 # `pkexec kill` without prompting for a password each time. Run once after
-# installing JackyNet.
+# installing Tauri x25.
 #
 #   sudo ./install-polkit-rule.sh           # uses $SUDO_USER and `which nethogs`
 #   sudo ./install-polkit-rule.sh <user>    # explicit user
 #
 # To revert:
-#   sudo rm /etc/polkit-1/rules.d/50-jackynet-nethogs.rules
+#   sudo rm /etc/polkit-1/rules.d/50-tauri-x25-nethogs.rules
 
 set -euo pipefail
 
-RULE_PATH="/etc/polkit-1/rules.d/50-jackynet-nethogs.rules"
+RULE_PATH="/etc/polkit-1/rules.d/50-tauri-x25-nethogs.rules"
 
 if [[ "$(id -u)" -ne 0 ]]; then
   echo "error: must be run as root (use sudo)." >&2
@@ -50,7 +50,7 @@ echo "  kill:    $KILL_BIN"
 echo "  rule:    $RULE_PATH"
 
 cat > "$RULE_PATH" <<EOF
-// JackyNet — allow $TARGET_USER to run nethogs and kill via pkexec without
+// Tauri x25 — allow $TARGET_USER to run nethogs and kill via pkexec without
 // password. Installed by install-polkit-rule.sh. Remove to revert.
 polkit.addRule(function(action, subject) {
     if (action.id != "org.freedesktop.policykit.exec") return;
@@ -69,4 +69,4 @@ if systemctl is-active --quiet polkit; then
   systemctl reload polkit 2>/dev/null || systemctl restart polkit || true
 fi
 
-echo "Done. Open JackyNet — nethogs and kill should now run without prompts."
+echo "Done. Open Tauri x25 — nethogs and kill should now run without prompts."

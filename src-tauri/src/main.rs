@@ -1,5 +1,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    jackynet_lib::run();
+    tauri_x25_lib::run();
 }

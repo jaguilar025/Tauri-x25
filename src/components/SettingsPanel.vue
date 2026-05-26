@@ -27,7 +27,7 @@ function save() {
       <input type="text" v-model="local.hotkey" placeholder="CmdOrCtrl+Shift+N" />
 
       <label>Start on system boot</label>
-      <label class="row"><input type="checkbox" v-model="local.autostart" /> <span class="muted">Launch JackyNet at login</span></label>
+      <label class="row"><input type="checkbox" v-model="local.autostart" /> <span class="muted">Launch Tauri x25 at login</span></label>
 
       <label>Picture-in-Picture</label>
       <label class="row"><input type="checkbox" v-model="local.pip_enabled" /> <span class="muted">Show floating overlay</span></label>
@@ -35,7 +35,7 @@ function save() {
 
     <p class="muted" style="margin-top: 14px; font-size: 12px;">
       Rename interfaces or processes by double-clicking their name in the list. Aliases are stored in
-      <span class="mono">~/.config/jackynet/config.json</span>.
+      <span class="mono">~/.config/tauri-x25/config.json</span>.
     </p>
   </div>
 </template>

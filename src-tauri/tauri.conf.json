@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "JackyNet",
-  "version": "1.2.0",
-  "identifier": "dev.jackynet.app",
+  "productName": "Tauri x25",
+  "version": "1.3.0",
+  "identifier": "dev.tauri-x25.app",
   "build": {
     "beforeDevCommand": "npm run dev",
     "beforeBuildCommand": "npm run build",
@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "JackyNet",
+        "title": "Tauri x25",
         "width": 1000,
         "height": 680,
         "minWidth": 720,
@@ -43,7 +43,7 @@
       "deb": {
         "depends": ["nethogs", "vnstat", "policykit-1", "libayatana-appindicator3-1"],
         "files": {
-          "/usr/share/jackynet/scripts/install-polkit-rule.sh": "../scripts/install-polkit-rule.sh"
+          "/usr/share/tauri-x25/scripts/install-polkit-rule.sh": "../scripts/install-polkit-rule.sh"
         }
       },
       "appimage": {

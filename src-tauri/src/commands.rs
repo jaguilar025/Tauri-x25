@@ -168,7 +168,7 @@ pub fn apply_pip(app: &AppHandle, enabled: bool) -> tauri::Result<()> {
         if let Some(w) = &main { let _ = w.hide(); }
         if pip.is_none() {
             WebviewWindowBuilder::new(app, "pip", WebviewUrl::App("index.html?view=pip".into()))
-                .title("JackyNet")
+                .title("Tauri x25")
                 .inner_size(220.0, 330.0)
                 .min_inner_size(220.0, 140.0)
                 .always_on_top(true)

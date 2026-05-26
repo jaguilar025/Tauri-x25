@@ -1,4 +1,4 @@
-# JackyNet
+# Tauri x25
 
 Monitor de red ligero para Linux. Muestra qué procesos están usando tu conexión en tiempo real y el consumo histórico por interfaz, con una pequeña ventana flotante opcional (Picture-in-Picture) para tener los datos a la vista mientras trabajas.
 
@@ -10,14 +10,14 @@ Este proyecto nació después de quedarme sin conexión a internet durante 3 dí
 
 El problema fue que estaba consumiendo datos prácticamente a ciegas. En apenas 30 minutos había gastado cerca de 1 GB sin tener claro qué aplicaciones o procesos eran responsables.
 
-Necesitaba más visibilidad: saber exactamente qué programas estaban usando la red y cuánto estaban consumiendo en tiempo real. Herramientas como nethogs y vnstat ya ofrecían parte de esa información, pero quería algo más integrado, minimalista y adaptado a mi flujo de trabajo diario. Así nació JackyNet.
+Necesitaba más visibilidad: saber exactamente qué programas estaban usando la red y cuánto estaban consumiendo en tiempo real. Herramientas como nethogs y vnstat ya ofrecían parte de esa información, pero quería algo más integrado, minimalista y adaptado a mi flujo de trabajo diario. Así nació Tauri x25.
 
 ## Características
 
 - **Tabla en vivo** con cada proceso que está enviando o recibiendo paquetes, sus velocidades de subida/bajada, PID y usuario. Click en una fila para ver la ruta completa del binario, su cmdline, asignarle un alias o terminar el proceso.
 - **Consumo histórico** por interfaz de red: totales, diario, mensual. Cada interfaz es colapsable y se le puede dar un nombre amigable (`enxa65ac2b88521` → "Mobile Data").
-- **Aliases persistentes** para procesos e interfaces, guardados en `~/.config/jackynet/config.json`. Los aliases se resuelven incluso para apps Electron (Slack, VS Code, Chrome) que comparten `/proc/self/exe`, gracias a la resolución vía `readlink /proc/<pid>/exe`.
-- **Estadísticas de sesión**: hora de inicio, tiempo online y total acumulado de subida/bajada desde que JackyNet arrancó.
+- **Aliases persistentes** para procesos e interfaces, guardados en `~/.config/tauri-x25/config.json`. Los aliases se resuelven incluso para apps Electron (Slack, VS Code, Chrome) que comparten `/proc/self/exe`, gracias a la resolución vía `readlink /proc/<pid>/exe`.
+- **Estadísticas de sesión**: hora de inicio, tiempo online y total acumulado de subida/bajada desde que Tauri x25 arrancó.
 - **Modo PiP**: ventana mini, siempre visible, arrastrable y redimensionable.
 - **Tray icon** en la barra superior de Ubuntu. Cerrar la ventana no cierra la app, queda corriendo en segundo plano; menú del tray para mostrar, alternar PiP, refrescar o salir.
 - **Hotkey global** configurable para mostrar/ocultar la ventana principal.
@@ -40,10 +40,10 @@ Para **compilar** desde código (no necesario si instalas el `.deb`):
 
 ### Opción A — paquete .deb (recomendado)
 
-Descarga el `.deb` más reciente desde [Releases](https://github.com/jaguilar025/JackyNet/releases/tag/v1.2.0) e instálalo:
+Descarga el `.deb` más reciente desde [Releases](https://github.com/jaguilar025/JackyNet/releases/tag/v1.3.0) e instálalo:
 
 ```bash
-sudo apt install ./JackyNet_1.2.0_amd64.deb
+sudo apt install ./Tauri\ x25_1.3.0_amd64.deb
 ```
 
 apt resolverá automáticamente las dependencias (`nethogs`, `vnstat`, `policykit-1`, `libayatana-appindicator3-1`).
@@ -55,16 +55,16 @@ git clone https://github.com/jaguilar025/JackyNet
 cd JackyNet
 npm install
 npm run tauri:build
-sudo apt install ./src-tauri/target/release/bundle/deb/JackyNet_*.deb
+sudo apt install ./src-tauri/target/release/bundle/deb/tauri-x25_*.deb
 ```
 
 ### Opción C — AppImage portable
 
-Descarga el `.AppImage` desde [Releases](https://github.com/jaguilar025/JackyNet/releases/tag/v1.2.0), dale permisos de ejecución y úsalo donde quieras:
+Descarga el `.AppImage` desde [Releases](https://github.com/jaguilar025/JackyNet/releases/tag/v1.3.0), dale permisos de ejecución y úsalo donde quieras:
 
 ```bash
-chmod +x JackyNet_1.2.0_amd64.AppImage
-./JackyNet_1.2.0_amd64.AppImage
+chmod +x Tauri\ x25_1.3.0_amd64.AppImage
+./Tauri\ x25_1.3.0_amd64.AppImage
 ```
 
 Con esta opción debes instalar las dependencias del sistema a mano:
@@ -75,29 +75,29 @@ sudo apt install nethogs vnstat policykit-1 libayatana-appindicator3-1
 
 ## Configuración post-instalación: permisos de nethogs
 
-`nethogs` necesita privilegios de root para mapear conexiones de procesos de otros usuarios (por ejemplo daemons del sistema como `nordvpnd`). JackyNet lo lanza mediante `pkexec`, que por defecto pide contraseña en cada arranque.
+`nethogs` necesita privilegios de root para mapear conexiones de procesos de otros usuarios (por ejemplo daemons del sistema como `nordvpnd`). Tauri x25 lo lanza mediante `pkexec`, que por defecto pide contraseña en cada arranque.
 
 Para que **no pida contraseña**, ejecuta una sola vez:
 
 ```bash
 # Si instalaste el .deb:
-sudo /usr/share/jackynet/scripts/install-polkit-rule.sh
+sudo /usr/share/tauri-x25/scripts/install-polkit-rule.sh
 
 # Si compilaste desde código:
 sudo ./scripts/install-polkit-rule.sh
 ```
 
-El script crea una regla en `/etc/polkit-1/rules.d/50-jackynet-nethogs.rules` que permite a tu usuario lanzar `nethogs` vía pkexec sin prompt. Sobrevive a reinicios y actualizaciones.
+El script crea una regla en `/etc/polkit-1/rules.d/50-tauri-x25-nethogs.rules` que permite a tu usuario lanzar `nethogs` vía pkexec sin prompt. Sobrevive a reinicios y actualizaciones.
 
 Para revertir:
 
 ```bash
-sudo rm /etc/polkit-1/rules.d/50-jackynet-nethogs.rules
+sudo rm /etc/polkit-1/rules.d/50-tauri-x25-nethogs.rules
 ```
 
 ## Uso
 
-Abre JackyNet desde el menú de aplicaciones de Ubuntu o búscalo con la tecla Super.
+Abre Tauri x25 desde el menú de aplicaciones de Ubuntu o búscalo con la tecla Super.
 
 - **Refresh**: vuelve a leer datos de nethogs y vnstat (no resetea la base de datos de vnstat).
 - **PIP**: abre la ventana flotante mini. Para cerrarla, click en la `✕` del PiP o usa el menú del tray.
@@ -106,7 +106,7 @@ Abre JackyNet desde el menú de aplicaciones de Ubuntu o búscalo con la tecla S
 - **Matar un proceso**: click en la fila → "Kill PID". Pedirá confirmación.
 - **Tray icon**: click derecho para acceder al menú; cerrar la ventana principal solo la oculta.
 
-La configuración (aliases, hotkey, etc.) se guarda en `~/.config/jackynet/config.json`.
+La configuración (aliases, hotkey, etc.) se guarda en `~/.config/tauri-x25/config.json`. Si tienes una instalación previa de JackyNet, la app migra automáticamente el directorio antiguo (`~/.config/jackynet/`) la primera vez que arranca.
 
 ## Desarrollo
 
@@ -122,7 +122,7 @@ Esto levanta Vite en `127.0.0.1:1420` y arranca la ventana Tauri en modo desarro
 Estructura:
 
 ```
-JackyNet/
+tauri-x25/
 ├── src/                   # Frontend Vue 3
 │   └── components/        # Dashboard, ProcessTable, HistoricalView, PipView, SessionFooter, SettingsPanel
 ├── src-tauri/             # Backend Rust + configuración Tauri
@@ -143,11 +143,19 @@ JackyNet/
 ## Desinstalar
 
 ```bash
-sudo apt remove jackynet
-sudo rm /etc/polkit-1/rules.d/50-jackynet-nethogs.rules
+sudo apt remove tauri-x25
+sudo rm /etc/polkit-1/rules.d/50-tauri-x25-nethogs.rules
+rm -rf ~/.config/tauri-x25
+```
+
+Si vienes de la versión anterior (JackyNet), también borra los restos:
+
+```bash
+sudo apt remove jackynet 2>/dev/null || true
+sudo rm -f /etc/polkit-1/rules.d/50-jackynet-nethogs.rules
 rm -rf ~/.config/jackynet
 ```
 
 ## Créditos
 
-by jaacker25 — 2026 — v1.2
+by jaguilar025 — 2026 — v1.3
